@@ -8,95 +8,13 @@ import time
 from collections import Counter
 import re
 
+from config import TECHNOLOGIES, EXPERIENCE_LEVELS, URLS
+
 
 class VacanciesSpider(scrapy.Spider):
     name = "vacancies"
     allowed_domains = ["jobs.dou.ua"]
-    start_urls = [
-        "https://jobs.dou.ua/vacancies/?category=Python&exp=0-1",
-        "https://jobs.dou.ua/vacancies/?category=Python&exp=1-3",
-        "https://jobs.dou.ua/vacancies/?category=Python&exp=3-5",
-        "https://jobs.dou.ua/vacancies/?category=Python&exp=5plus",
-    ]
-
-    technologies = [
-        "Python",
-        "Django",
-        "Flask",
-        "FastAPI",
-        "Pyramid",
-        "Tornado",
-        "Bottle",
-        "AWS",
-        "RoboDK",
-        "API",
-        "Azure",
-        "Google Cloud Platform",
-        "Docker",
-        "Kubernetes",
-        "Terraform",
-        "Ansible",
-        "Celery",
-        "Redis",
-        "RabbitMQ",
-        "Apache Kafka",
-        "PostgreSQL",
-        "MySQL",
-        "SQLite",
-        "MongoDB",
-        "Elasticsearch",
-        "SQLAlchemy",
-        "Peewee",
-        "Jenkins",
-        "GitLab CI",
-        "CircleCI",
-        "Travis CI",
-        "Sentry",
-        "New Relic",
-        "Grafana",
-        "Prometheus",
-        "pytest",
-        "unittest",
-        "coverage.py",
-        "tox",
-        "requests",
-        "httpx",
-        "aiohttp",
-        "BeautifulSoup",
-        "Scrapy",
-        "Pytest-Django",
-        "Flask-RESTful",
-        "DRF",
-        "Pydantic",
-        "Marshmallow",
-        "OpenCV",
-        "TensorFlow",
-        "PyTorch",
-        "scikit-learn",
-        "Keras",
-        "NLTK",
-        "spaCy",
-        "Jupyter",
-        "Matplotlib",
-        "Seaborn",
-        "Plotly",
-        "Dash",
-        "Pygame",
-        "Pandas",
-        "NumPy",
-        "SciPy",
-        "SymPy",
-        "ML",
-        "GIT"
-    ]
-
-    experience_levels = {
-        "0-1": "junior",
-        "1-3": "middle",
-        "3-5": "senior",
-        "5plus": "senior",
-    }
-
+    start_urls = URLS
     tech_counter = Counter()
 
     def __init__(self):
@@ -134,6 +52,12 @@ class VacanciesSpider(scrapy.Spider):
             response.css("div.b-typo.vacancy-section *::text").getall()
         )
         job_link = response.url
+        salary = (
+            response.css("div.sh-info span.salary::text")
+            .get(default="Not specified")
+            .strip()
+        )
+        salary = self.clean_salary(salary)
 
         start_url = response.meta.get("start_url", "")
         techs_in_job = self.extract_technologies(job_description)
@@ -144,6 +68,7 @@ class VacanciesSpider(scrapy.Spider):
         yield {
             "title": title,
             "company": company,
+            "salary_in_$": salary,
             "technologies": techs_in_job,
             "experience_level": experience_level,
             "link": job_link,
@@ -151,7 +76,7 @@ class VacanciesSpider(scrapy.Spider):
 
     def extract_technologies(self, job_description: str) -> list:
         found_technologies = []
-        for tech in self.technologies:
+        for tech in TECHNOLOGIES:
             if tech.lower() in job_description.lower():
                 found_technologies.append(tech)
         return found_technologies
@@ -160,8 +85,29 @@ class VacanciesSpider(scrapy.Spider):
         exp_match = re.search(r"exp=(\d+-\d+|5plus)", url)
         if exp_match:
             exp = exp_match.group(1)
-            return self.experience_levels.get(exp, "unknown")
+            return EXPERIENCE_LEVELS.get(exp, "unknown")
         return "unknown"
+
+    def clean_salary(self, salary: str) -> str:
+        salary = (
+            salary.lower()
+            .replace("від", "")
+            .replace("дол.", "")
+            .replace("$", "")
+            .strip()
+        )
+        salary_match = re.search(r"(\d+)\s*[-–]\s*(\d+)", salary)
+
+        if salary_match:
+            min_salary = int(salary_match.group(1))
+            max_salary = int(salary_match.group(2))
+            return f"{min_salary}-{max_salary}"
+
+        single_salary_match = re.search(r"(\d+)", salary)
+        if single_salary_match:
+            return f"{single_salary_match.group(1)}-{single_salary_match.group(1)}"
+
+        return "Not specified"
 
     def closed(self, reason):
         print("The most popular technologies:")
