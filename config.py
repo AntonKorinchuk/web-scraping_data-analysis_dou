@@ -1,3 +1,10 @@
+URLS = [
+    "https://jobs.dou.ua/vacancies/?category=Python&exp=0-1",
+    "https://jobs.dou.ua/vacancies/?category=Python&exp=1-3",
+    "https://jobs.dou.ua/vacancies/?category=Python&exp=3-5",
+    "https://jobs.dou.ua/vacancies/?category=Python&exp=5plus",
+]
+
 TECHNOLOGIES = [
     "Python",
     "Django",
