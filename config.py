@@ -73,13 +73,12 @@ TECHNOLOGIES = [
     "SciPy",
     "SymPy",
     "ML",
-    "GIT"
+    "GIT",
 ]
 
 EXPERIENCE_LEVELS = {
-        "0-1": "Junior",
-        "1-3": "Middle",
-        "3-5": "Senior",
-        "5plus": "Lead",
-    }
-
+    "0-1": "Junior",
+    "1-3": "Middle",
+    "3-5": "Senior",
+    "5plus": "Lead",
+}
